@@ -1,15 +1,30 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import reactLogo from './assets/react.svg'
+import { invoke } from '@tauri-apps/api/core'
+import { onOpenUrl } from '@tauri-apps/plugin-deep-link'
+import './App.css'
+import { useEffect } from 'react'
+
+const authUrl =
+  'https://reddit.com/api/v1/authorize?client_id=hA3lSTjkXKSqoFxoTVG97g&duration=temporary&redirect_uri=my-tauri-app%3A%2F%2Freddit-oauth&response_type=code&scope=read&state=somestate'
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  useEffect(() => {
+    const unlistenPromise = onOpenUrl((url) => {
+        console.log('Received URL:', url);
+        alert(`Received URL: ${url}`);
+    });
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setGreetMsg(await invoke("greet", { name }));
+    return () => {
+        unlistenPromise.then(unlisten => unlisten());
+    }
+  }, [])
+
+  async function open() {
+    try {
+      await invoke('open', { url: authUrl })
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return (
@@ -33,21 +48,14 @@ function App() {
       <form
         className="row"
         onSubmit={(e) => {
-          e.preventDefault();
-          greet();
+          e.preventDefault()
+          open()
         }}
       >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
+        <button type="submit">Authenticate</button>
       </form>
-
-      <p>{greetMsg}</p>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
